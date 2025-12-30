@@ -56,7 +56,7 @@ function loadPrefs() {
 function savePrefs(prefs) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    } catch {}
+    } catch { }
 }
 
 function getCurrentPrefs() {

@@ -141,11 +141,11 @@ my Cro::Service $service = Cro::HTTP::Server.new(
 
 $service.start;
 
-say "🎮 Talkomatic server running at http://0.0.0.0:3000";
-say "Press Ctrl+C to stop";
+say "💬 talkomatic server running at http://0.0.0.0:3000";
+say "press Ctrl+C to stop";
 
 react whenever signal(SIGINT) {
-    say "\n👋 Shutting down...";
+    say "\n👋 shutting down...";
     $service.stop;
     exit;
 }
