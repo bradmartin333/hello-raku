@@ -8,3 +8,7 @@ A real-time group chat web application inspired by the original Talkomatic from 
 - Usernames and color theming
 - Single chat room on local IP
 - Simple and intuitive interface
+
+## Raku Modules Used
+
+- cro

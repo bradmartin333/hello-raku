@@ -9,7 +9,7 @@ my %clients; # username => client-supply
 my %user-texts; # username => current text
 my %user-themes; # username => { color => Str, font => Str, bg => Str }
 
-my %default-theme = (color => 'green', font => 'courier', bg => 'black');
+my %default-theme = (color => '#00ff00', font => 'courier', bg => '#000000');
 
 # HTTP routes
 my $application = route {

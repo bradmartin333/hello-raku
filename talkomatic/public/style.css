@@ -44,20 +44,16 @@ body {
 }
 
 #username-input {
-    background: #000;
+    background: transparent;
     color: #999;
-    border: 1px solid #333;
-    padding: 12px 20px;
-    font-family: 'Courier New', monospace;
+    border: none;
+    padding: 15px;
     font-size: 1.2em;
-    margin-bottom: 20px;
     width: 100%;
 }
 
 #username-input:focus {
     outline: none;
-    border-color: #666;
-    color: #ccc;
 }
 
 .preview-area {
@@ -112,6 +108,20 @@ body {
     font-size: 1em;
     cursor: pointer;
     width: 100%;
+}
+
+.theme-selector input[type="color"] {
+    background: #000;
+    border: 1px solid #333;
+    width: 100%;
+    height: 42px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.theme-selector input[type="color"]:focus {
+    outline: none;
+    border-color: #666;
 }
 
 .theme-selector select:focus {
@@ -194,7 +204,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid #333;
     min-height: 0;
 }
 
@@ -203,8 +213,8 @@ body {
 }
 
 .user-label {
-    padding: 5px 10px;
-    font-size: 0.9em;
+    padding: 7px 10px;
+    font-size: 1.15em;
     border-bottom: 1px solid #222;
 }
 
@@ -225,20 +235,56 @@ body {
     line-height: 1.4;
 }
 
+.user-text:focus,
+.user-text:focus-visible {
+    outline: none;
+}
+
 /* Theme primitives (shared by preview + rows) */
-.theme-green { color: #0f0; }
-.theme-amber { color: #ffb000; }
-.theme-cyan { color: #00ffff; }
-.theme-white { color: #ffffff; }
-.theme-magenta { color: #ff00ff; }
-.theme-blue { color: #5555ff; }
+.theme-green {
+    color: #0f0;
+}
+
+.theme-amber {
+    color: #ffb000;
+}
+
+.theme-cyan {
+    color: #00ffff;
+}
+
+.theme-white {
+    color: #ffffff;
+}
+
+.theme-magenta {
+    color: #ff00ff;
+}
+
+.theme-blue {
+    color: #5555ff;
+}
 
 /* Background themes (apply to preview + textarea) */
-.bg-black { background: #000; }
-.bg-slate { background: #0b0f14; }
-.bg-navy { background: #001326; }
-.bg-maroon { background: #240008; }
-.bg-paper { background: #f2f2f2; }
+.bg-black {
+    background: #000;
+}
+
+.bg-slate {
+    background: #0b0f14;
+}
+
+.bg-navy {
+    background: #001326;
+}
+
+.bg-maroon {
+    background: #240008;
+}
+
+.bg-paper {
+    background: #f2f2f2;
+}
 
 /* Ensure preview bg fills its box */
 .preview-text.bg-black,
@@ -250,22 +296,41 @@ body {
     width: 100%;
 }
 
-.font-courier { font-family: 'Courier New', monospace; }
-.font-mono { font-family: monospace; }
-.font-consolas { font-family: 'Consolas', monospace; }
-.font-terminal { font-family: 'Lucida Console', monospace; }
+.font-courier {
+    font-family: 'Courier New', monospace;
+}
 
-.user-text.theme-blue { color: #5555ff; }
+.font-mono {
+    font-family: monospace;
+}
+
+.font-consolas {
+    font-family: 'Consolas', monospace;
+}
+
+.font-terminal {
+    font-family: 'Lucida Console', monospace;
+}
+
+.user-text.theme-blue {
+    color: #5555ff;
+}
 
 /* Font themes */
-.user-text.font-courier { font-family: 'Courier New', monospace; }
-.user-text.font-mono { font-family: monospace; }
-.user-text.font-consolas { font-family: 'Consolas', monospace; }
-.user-text.font-terminal { font-family: 'Lucida Console', monospace; }
+.user-text.font-courier {
+    font-family: 'Courier New', monospace;
+}
 
-.user-text:focus {
-    outline: none;
-    background: #001100;
+.user-text.font-mono {
+    font-family: monospace;
+}
+
+.user-text.font-consolas {
+    font-family: 'Consolas', monospace;
+}
+
+.user-text.font-terminal {
+    font-family: 'Lucida Console', monospace;
 }
 
 .user-text:disabled {

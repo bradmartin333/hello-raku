@@ -14,10 +14,35 @@ const joinBtn = document.getElementById('join-btn');
 const colorSelect = document.getElementById('color-select');
 const fontSelect = document.getElementById('font-select');
 const bgSelect = document.getElementById('bg-select');
-const previewText = document.getElementById('preview-text');
 const userRowsDiv = document.getElementById('user-rows');
 const userCountSpan = document.getElementById('user-count');
 const exitBtn = document.getElementById('exit-btn');
+
+const NAMED_COLORS = {
+    green: '#00ff00',
+    amber: '#ffb000',
+    cyan: '#00ffff',
+    white: '#ffffff',
+    magenta: '#ff00ff',
+    blue: '#5555ff'
+};
+
+const NAMED_BGS = {
+    black: '#000000',
+    slate: '#0b0f14',
+    navy: '#001326',
+    maroon: '#240008',
+    paper: '#f2f2f2'
+};
+
+function normalizeColor(value, table, fallback) {
+    if (!value) return fallback;
+    if (typeof value !== 'string') return fallback;
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+    if (trimmed.startsWith('#')) return trimmed;
+    return table[trimmed] ?? fallback;
+}
 
 function loadPrefs() {
     try {
@@ -39,18 +64,20 @@ function savePrefs(prefs) {
 
 function getCurrentPrefs() {
     return {
-        color: colorSelect?.value ?? 'green',
+        color: normalizeColor(colorSelect?.value, NAMED_COLORS, '#00ff00'),
         font: fontSelect?.value ?? 'courier',
-        bg: bgSelect?.value ?? 'black'
+        bg: normalizeColor(bgSelect?.value, NAMED_BGS, '#000000')
     };
 }
 
 // Update preview when theme changes
 function updatePreview() {
-    if (!previewText) return;
+    if (!usernameInput) return;
 
     const { color, font, bg } = getCurrentPrefs();
-    previewText.className = `preview-text theme-${color} font-${font} bg-${bg}`;
+    usernameInput.className = `font-${font}`;
+    usernameInput.style.color = color;
+    usernameInput.style.backgroundColor = bg;
 
     savePrefs({ color, font, bg });
 }
@@ -70,9 +97,13 @@ bgSelect?.addEventListener('input', updatePreview);
 {
     const prefs = loadPrefs();
     if (prefs) {
-        if (colorSelect && prefs.color) colorSelect.value = prefs.color;
+        if (colorSelect && prefs.color) {
+            colorSelect.value = normalizeColor(prefs.color, NAMED_COLORS, '#00ff00');
+        }
         if (fontSelect && prefs.font) fontSelect.value = prefs.font;
-        if (bgSelect && prefs.bg) bgSelect.value = prefs.bg;
+        if (bgSelect && prefs.bg) {
+            bgSelect.value = normalizeColor(prefs.bg, NAMED_BGS, '#000000');
+        }
         updatePreview();
     }
 }
@@ -82,18 +113,25 @@ function createUserRow(user, isOwn = false) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'user-row';
     rowDiv.id = `row-${user}`;
-    
+
     const theme = userThemes[user] || { color: 'green', font: 'courier', bg: 'black' };
-    
+    const themeColor = normalizeColor(theme.color, NAMED_COLORS, '#00ff00');
+    const themeBg = normalizeColor(theme.bg, NAMED_BGS, '#000000');
+
     const labelDiv = document.createElement('div');
-    labelDiv.className = `user-label ${isOwn ? 'own' : ''} theme-${theme.color} font-${theme.font}`;
+    labelDiv.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
     labelDiv.textContent = user;
-    
+    labelDiv.style.color = themeColor;
+    labelDiv.style.backgroundColor = themeBg;
+
     const textarea = document.createElement('textarea');
-    textarea.className = `user-text theme-${theme.color} font-${theme.font} bg-${theme.bg}`;
+    textarea.className = `user-text font-${theme.font}`;
     textarea.id = `text-${user}`;
-    textarea.disabled = !isOwn;
-    
+    textarea.readOnly = !isOwn;
+    if (!isOwn) textarea.tabIndex = -1;
+    textarea.style.color = themeColor;
+    textarea.style.backgroundColor = themeBg;
+
     if (isOwn) {
         // Send updates on input
         let timeout;
@@ -109,10 +147,10 @@ function createUserRow(user, isOwn = false) {
             }, 100); // Debounce by 100ms
         });
     }
-    
+
     rowDiv.appendChild(labelDiv);
     rowDiv.appendChild(textarea);
-    
+
     return rowDiv;
 }
 
@@ -123,23 +161,31 @@ function updateUser(user, text = '', isOwn = false) {
         userRows[user] = createUserRow(user, isOwn);
         userRowsDiv.appendChild(userRows[user]);
         users.push(user);
-        
+
         // Update layout
         redistributeRows();
     } else {
         // Update existing row's theme
         const theme = userThemes[user] || { color: 'green', font: 'courier', bg: 'black' };
+        const themeColor = normalizeColor(theme.color, NAMED_COLORS, '#00ff00');
+        const themeBg = normalizeColor(theme.bg, NAMED_BGS, '#000000');
         const label = userRows[user].querySelector('.user-label');
         const textarea = userRows[user].querySelector('.user-text');
-        
+
         if (label) {
-            label.className = `user-label ${isOwn ? 'own' : ''} theme-${theme.color} font-${theme.font}`;
+            label.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
+            label.style.color = themeColor;
+            label.style.backgroundColor = themeBg;
         }
         if (textarea) {
-            textarea.className = `user-text theme-${theme.color} font-${theme.font} bg-${theme.bg}`;
+            textarea.className = `user-text font-${theme.font}`;
+            textarea.readOnly = !isOwn;
+            textarea.tabIndex = isOwn ? 0 : -1;
+            textarea.style.color = themeColor;
+            textarea.style.backgroundColor = themeBg;
         }
     }
-    
+
     // Update text if not own (own is updated by typing)
     if (!isOwn && text !== undefined) {
         const textarea = document.getElementById(`text-${user}`);
@@ -163,7 +209,7 @@ function removeUser(user) {
 function redistributeRows() {
     const count = Object.keys(userRows).length;
     const height = count > 0 ? `${100 / count}%` : '100%';
-    
+
     for (let user in userRows) {
         userRows[user].style.height = height;
     }
@@ -173,23 +219,23 @@ function redistributeRows() {
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/chat`;
-    
+
     ws = new WebSocket(wsUrl);
-    
+
     ws.onopen = () => {
         console.log('Connected to chat server');
-        sendMessage({ 
-            type: 'join', 
+        sendMessage({
+            type: 'join',
             user: username,
             theme: userThemes[username]
         });
     };
-    
+
     ws.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            
-            switch(data.type) {
+
+            switch (data.type) {
                 case 'join':
                     if (data.user !== username) {
                         if (data.theme) {
@@ -198,11 +244,11 @@ function connectWebSocket() {
                         updateUser(data.user);
                     }
                     break;
-                    
+
                 case 'leave':
                     removeUser(data.user);
                     break;
-                    
+
                 case 'update':
                     if (data.user !== username) {
                         if (data.theme) {
@@ -211,7 +257,7 @@ function connectWebSocket() {
                         updateUser(data.user, data.text);
                     }
                     break;
-                    
+
                 case 'users':
                     // Initial user list (array of { user, theme, text })
                     data.users.forEach((entry) => {
@@ -226,7 +272,7 @@ function connectWebSocket() {
                         updateUser(user, text);
                     });
                     break;
-                    
+
                 case 'user-count':
                     updateUserCount(data.count);
                     break;
@@ -235,11 +281,11 @@ function connectWebSocket() {
             console.error('Error parsing message:', e);
         }
     };
-    
+
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
     };
-    
+
     ws.onclose = () => {
         console.log('Disconnected from chat server');
         setTimeout(connectWebSocket, 3000);
@@ -261,25 +307,25 @@ function updateUserCount(count) {
 // Join chat
 function joinChat() {
     const name = usernameInput.value.trim();
-    
+
     if (!name) {
         alert('Please enter a username');
         return;
     }
-    
+
     username = name;
-    
+
     // Store own theme preferences
     userThemes[username] = getCurrentPrefs();
-    
+
     loginScreen.classList.remove('active');
     chatScreen.classList.add('active');
-    
+
     // Add own row first
     updateUser(username, '', true);
-    
+
     connectWebSocket();
-    
+
     // Focus on own textarea
     const ownTextarea = document.getElementById(`text-${username}`);
     if (ownTextarea) {
@@ -311,9 +357,9 @@ function exitToLogin() {
     chatScreen.classList.remove('active');
     loginScreen.classList.add('active');
 
-    if (colorSelect) colorSelect.value = 'green';
+    if (colorSelect) colorSelect.value = '#00ff00';
     if (fontSelect) fontSelect.value = 'courier';
-    if (bgSelect) bgSelect.value = 'black';
+    if (bgSelect) bgSelect.value = '#000000';
     updatePreview();
 
     usernameInput.value = '';
