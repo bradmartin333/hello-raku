@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talkomatic</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-screen" class="screen active">
+        <div class="login-box">
+            <h1>TALKOMATIC</h1>
+            <input type="text" id="username-input" placeholder="your name" maxlength="20" autocomplete="off">
+            
+            <div class="preview-area" id="preview-area">
+                <div class="preview-label">preview</div>
+                <div class="preview-text" id="preview-text">The quick brown fox jumps over the lazy dog</div>
+            </div>
+            
+            <div class="selectors-row">
+                <div class="theme-selector">
+                    <label>color</label>
+                    <select id="color-select">
+                        <option value="green" selected>green</option>
+                        <option value="amber">amber</option>
+                        <option value="cyan">cyan</option>
+                        <option value="white">white</option>
+                        <option value="magenta">magenta</option>
+                        <option value="blue">blue</option>
+                    </select>
+                </div>
+                
+                <div class="theme-selector">
+                    <label>font</label>
+                    <select id="font-select">
+                        <option value="courier" selected>courier</option>
+                        <option value="mono">mono</option>
+                        <option value="consolas">consolas</option>
+                        <option value="terminal">terminal</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="selectors-row">
+                <div class="theme-selector">
+                    <label>background</label>
+                    <select id="bg-select">
+                        <option value="black" selected>black</option>
+                        <option value="slate">slate</option>
+                        <option value="navy">navy</option>
+                        <option value="maroon">maroon</option>
+                        <option value="paper">paper</option>
+                    </select>
+                </div>
+                <div class="theme-selector">
+                    <label>&nbsp;</label>
+                    <div></div>
+                </div>
+            </div>
+            
+            <button id="join-btn">join</button>
+        </div>
+    </div>
+    
+    <div id="chat-screen" class="screen">
+        <div class="header-bar">
+            <span>TALKOMATIC</span>
+            <div class="header-actions">
+                <span id="user-count">0 online</span>
+                <button id="exit-btn" class="exit-btn" type="button" aria-label="Exit">⎋</button>
+            </div>
+        </div>
+        <div id="user-rows"></div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
