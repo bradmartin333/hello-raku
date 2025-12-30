@@ -11,4 +11,5 @@ A real-time group chat web application inspired by the original Talkomatic from 
 
 ## Raku Modules Used
 
-- cro
+- `zef install cro`
+- `zef install --/test Cro::HTTP Cro::WebSocket`

@@ -79,21 +79,10 @@ function updatePreview() {
     usernameInput.style.color = color;
     usernameInput.style.backgroundColor = bg;
 
-    savePrefs({ color, font, bg });
+    savePrefs({ color, font, bg, username: usernameInput.value });
 }
 
-// Initialize preview
-updatePreview();
-
-// Add event listeners for live preview
-colorSelect?.addEventListener('change', updatePreview);
-fontSelect?.addEventListener('change', updatePreview);
-colorSelect?.addEventListener('input', updatePreview);
-fontSelect?.addEventListener('input', updatePreview);
-bgSelect?.addEventListener('change', updatePreview);
-bgSelect?.addEventListener('input', updatePreview);
-
-// Load stored selections into the UI
+// Load stored selections into the UI first
 {
     const prefs = loadPrefs();
     if (prefs) {
@@ -104,9 +93,23 @@ bgSelect?.addEventListener('input', updatePreview);
         if (bgSelect && prefs.bg) {
             bgSelect.value = normalizeColor(prefs.bg, NAMED_BGS, '#000000');
         }
-        updatePreview();
+        if (usernameInput && prefs.username) {
+            usernameInput.value = prefs.username;
+        }
     }
 }
+
+// Initialize preview with loaded or default values
+updatePreview();
+
+// Add event listeners for live preview
+colorSelect?.addEventListener('change', updatePreview);
+fontSelect?.addEventListener('change', updatePreview);
+colorSelect?.addEventListener('input', updatePreview);
+fontSelect?.addEventListener('input', updatePreview);
+bgSelect?.addEventListener('change', updatePreview);
+bgSelect?.addEventListener('input', updatePreview);
+usernameInput?.addEventListener('input', updatePreview);
 
 // Create a row for a user
 function createUserRow(user, isOwn = false) {
@@ -315,8 +318,10 @@ function joinChat() {
 
     username = name;
 
-    // Store own theme preferences
-    userThemes[username] = getCurrentPrefs();
+    // Store own theme preferences and username
+    const prefs = getCurrentPrefs();
+    userThemes[username] = prefs;
+    savePrefs({ ...prefs, username: name });
 
     loginScreen.classList.remove('active');
     chatScreen.classList.add('active');
@@ -334,13 +339,6 @@ function joinChat() {
 }
 
 function exitToLogin() {
-    try {
-        // As requested: clear local storage for this origin
-        localStorage.clear();
-    } catch {
-        // ignore
-    }
-
     if (ws && ws.readyState === WebSocket.OPEN && username) {
         sendMessage({ type: 'leave', user: username });
         ws.close();

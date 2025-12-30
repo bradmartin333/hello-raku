@@ -43,6 +43,18 @@ body {
     letter-spacing: 5px;
 }
 
+/* UI text should be lowercase (not user-entered text) */
+.login-box h1,
+.preview-label,
+.theme-selector label,
+#join-btn,
+.header-bar,
+#user-count,
+.exit-btn,
+.user-label {
+    text-transform: lowercase;
+}
+
 #username-input {
     background: transparent;
     color: #999;
