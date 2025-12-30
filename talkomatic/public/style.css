@@ -42,17 +42,6 @@ body {
     letter-spacing: 5px;
 }
 
-.login-box h1,
-.preview-label,
-.theme-selector label,
-#join-btn,
-.header-bar,
-#user-count,
-.exit-btn,
-.user-label {
-    text-transform: lowercase;
-}
-
 #username-input {
     background: transparent;
     color: #999;
@@ -104,8 +93,7 @@ body {
 .theme-selector label {
     color: #666;
     font-size: 0.85em;
-    text-align: left;
-    text-transform: uppercase;
+    text-align: center;
     letter-spacing: 1px;
 }
 
@@ -153,7 +141,6 @@ body {
     font-family: 'Courier New', monospace;
     font-size: 1.2em;
     cursor: pointer;
-    text-transform: uppercase;
     letter-spacing: 2px;
     width: 100%;
 }
