@@ -7,6 +7,8 @@ use JSON::Fast;
 my %clients; # username => client-supply
 my %user-texts; # username => current text
 my %user-themes; # username => { color => Str, font => Str, bg => Str }
+my %user-status; # username => status ('active', 'away')
+my %user-sessions; # username => session-id
 
 my %default-theme = (color => '#00ff00', font => 'courier', bg => '#000000');
 my $application = route {
@@ -42,18 +44,38 @@ my $application = route {
                                 next;
                             }
                             
+                            my $session-id = $data<sessionId> // '';
+
+                            # Check for existing user
+                            if %clients{$current-user}:exists {
+                                # If session ID matches, allow takeover (reconnection)
+                                if %user-sessions{$current-user} eq $session-id {
+                                    say "User '$current-user' reconnected (session match)";
+                                } else {
+                                    say "Rejected join attempt: username '$current-user' already taken (session mismatch)";
+                                    $client-supply.emit(to-json({
+                                        type => 'error',
+                                        message => 'username already taken'
+                                    }));
+                                    next;
+                                }
+                            }
+                            
                             %clients{$current-user} = $client-supply;
                             %user-texts{$current-user} = '';
                             %user-themes{$current-user} = $data<theme> // %default-theme;
+                            %user-status{$current-user} = 'active';
+                            %user-sessions{$current-user} = $session-id;
                             
                             # Send current users list to new user
                             $client-supply.emit(to-json({
                                 type => 'users',
                                 users => %clients.keys.sort.map(-> $u {
                                     {
-                                        user  => $u,
-                                        text  => (%user-texts{$u} // ''),
-                                        theme => (%user-themes{$u} // %default-theme)
+                                        user   => $u,
+                                        text   => (%user-texts{$u} // ''),
+                                        theme  => (%user-themes{$u} // %default-theme),
+                                        status => (%user-status{$u} // 'active')
                                     }
                                 }).Array
                             }));
@@ -84,6 +106,15 @@ my $application = route {
                                 user => $data<user>,
                                 text => $data<text>,
                                 theme => (%user-themes{$data<user>} // %default-theme)
+                            });
+                        }
+
+                        when 'status' {
+                            %user-status{$data<user>} = $data<status>;
+                            broadcast-to-others($data<user>, {
+                                type => 'status',
+                                user => $data<user>,
+                                status => $data<status>
                             });
                         }
 
@@ -142,6 +173,7 @@ sub handle-disconnect($user, $client-supply) {
     %clients{$user}:delete;
     %user-texts{$user}:delete;
     %user-themes{$user}:delete;
+    %user-status{$user}:delete;
     %user-sessions{$user}:delete;
     
     broadcast-to-all({
