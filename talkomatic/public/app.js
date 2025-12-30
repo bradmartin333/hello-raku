@@ -124,9 +124,32 @@ function createUserRow(user, isOwn = false) {
 
     const labelDiv = document.createElement('div');
     labelDiv.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
-    labelDiv.textContent = user;
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = user;
+    labelDiv.appendChild(nameSpan);
+
     labelDiv.style.color = themeColor;
     labelDiv.style.backgroundColor = themeBg;
+    labelDiv.style.display = 'flex';
+    labelDiv.style.justifyContent = 'space-between';
+    labelDiv.style.alignItems = 'center';
+
+    if (!isOwn) {
+        const fireworksBtn = document.createElement('button');
+        fireworksBtn.className = 'fireworks-btn';
+        fireworksBtn.textContent = '🎆';
+        fireworksBtn.title = 'Send Fireworks';
+        fireworksBtn.onclick = (e) => {
+            e.stopPropagation();
+            sendMessage({
+                type: 'fireworks',
+                target: user,
+                from: username
+            });
+        };
+        labelDiv.appendChild(fireworksBtn);
+    }
 
     const textarea = document.createElement('textarea');
     textarea.className = `user-text font-${theme.font}`;
@@ -277,6 +300,10 @@ function connectWebSocket() {
                     updateUserCount(data.count);
                     break;
 
+                case 'fireworks':
+                    showFireworks();
+                    break;
+
                 case 'error':
                     alert(data.message || 'An error occurred');
                     exitToLogin();
@@ -375,5 +402,38 @@ window.addEventListener('beforeunload', () => {
         ws.close();
     }
 });
+
+function showFireworks() {
+    const container = document.createElement('div');
+    container.className = 'fireworks-container';
+    document.body.appendChild(container);
+
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'firework-particle';
+        
+        const startX = window.innerWidth / 2;
+        const startY = window.innerHeight / 2;
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 5;
+        const tx = Math.cos(angle) * velocity * 100;
+        const ty = Math.sin(angle) * velocity * 100;
+        
+        particle.style.left = startX + 'px';
+        particle.style.top = startY + 'px';
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
+        
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        container.appendChild(particle);
+    }
+
+    setTimeout(() => {
+        document.body.removeChild(container);
+    }, 2000);
+}
 
 usernameInput.focus();

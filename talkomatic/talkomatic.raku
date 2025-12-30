@@ -96,6 +96,15 @@ my $application = route {
                                 theme => (%user-themes{$data<user>} // %default-theme)
                             });
                         }
+
+                        when 'fireworks' {
+                            if %clients{$data<target>}:exists {
+                                %clients{$data<target>}.emit(to-json({
+                                    type => 'fireworks',
+                                    from => $data<from>
+                                }));
+                            }
+                        }
                         
                         when 'leave' {
                             handle-disconnect($data<user>);
