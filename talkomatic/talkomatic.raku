@@ -4,14 +4,11 @@ use Cro::HTTP::Server;
 use Cro::WebSocket::Message;
 use JSON::Fast;
 
-# Store connected clients and their state
 my %clients; # username => client-supply
 my %user-texts; # username => current text
 my %user-themes; # username => { color => Str, font => Str, bg => Str }
 
 my %default-theme = (color => '#00ff00', font => 'courier', bg => '#000000');
-
-# HTTP routes
 my $application = route {
     get -> {
         static 'public/index.html';
@@ -103,7 +100,6 @@ my $application = route {
     }
 }
 
-# Broadcast to all clients
 sub broadcast-to-all($data) {
     my $json = to-json($data);
     for %clients.values -> $client {
@@ -111,7 +107,6 @@ sub broadcast-to-all($data) {
     }
 }
 
-# Broadcast to all except sender
 sub broadcast-to-others($sender, $data) {
     my $json = to-json($data);
     for %clients.kv -> $user, $client {
@@ -119,7 +114,6 @@ sub broadcast-to-others($sender, $data) {
     }
 }
 
-# Handle user disconnect
 sub handle-disconnect($user) {
     return unless $user;
     return unless %clients{$user}:exists;
@@ -128,13 +122,11 @@ sub handle-disconnect($user) {
     %user-texts{$user}:delete;
     %user-themes{$user}:delete;
     
-    # Notify others
     broadcast-to-all({
         type => 'leave',
         user => $user
     });
     
-    # Update user count
     broadcast-to-all({
         type => 'user-count',
         count => %clients.elems
@@ -143,7 +135,6 @@ sub handle-disconnect($user) {
     say "User left: $user (total: {%clients.elems})";
 }
 
-# Start the server
 my Cro::Service $service = Cro::HTTP::Server.new(
     :host<0.0.0.0>, :port<3000>, :$application
 );

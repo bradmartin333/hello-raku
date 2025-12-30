@@ -2,11 +2,10 @@ let ws;
 let username = '';
 let userRows = {};
 let users = [];
-let userThemes = {}; // Store user theme preferences
+let userThemes = {};
 
 const STORAGE_KEY = 'talkomatic.prefs.v1';
 
-// DOM elements
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
 const usernameInput = document.getElementById('username-input');
@@ -57,9 +56,7 @@ function loadPrefs() {
 function savePrefs(prefs) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    } catch {
-        // ignore
-    }
+    } catch {}
 }
 
 function getCurrentPrefs() {
@@ -70,7 +67,6 @@ function getCurrentPrefs() {
     };
 }
 
-// Update preview when theme changes
 function updatePreview() {
     if (!usernameInput) return;
 
@@ -82,7 +78,6 @@ function updatePreview() {
     savePrefs({ color, font, bg, username: usernameInput.value });
 }
 
-// Load stored selections into the UI first
 {
     const prefs = loadPrefs();
     if (prefs) {
@@ -99,10 +94,8 @@ function updatePreview() {
     }
 }
 
-// Initialize preview with loaded or default values
 updatePreview();
 
-// Add event listeners for live preview
 colorSelect?.addEventListener('change', updatePreview);
 fontSelect?.addEventListener('change', updatePreview);
 colorSelect?.addEventListener('input', updatePreview);
@@ -111,7 +104,6 @@ bgSelect?.addEventListener('change', updatePreview);
 bgSelect?.addEventListener('input', updatePreview);
 usernameInput?.addEventListener('input', updatePreview);
 
-// Create a row for a user
 function createUserRow(user, isOwn = false) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'user-row';
@@ -136,7 +128,6 @@ function createUserRow(user, isOwn = false) {
     textarea.style.backgroundColor = themeBg;
 
     if (isOwn) {
-        // Send updates on input
         let timeout;
         textarea.addEventListener('input', () => {
             clearTimeout(timeout);
@@ -157,18 +148,13 @@ function createUserRow(user, isOwn = false) {
     return rowDiv;
 }
 
-// Add or update a user
 function updateUser(user, text = '', isOwn = false) {
     if (!userRows[user]) {
-        // Create new row
         userRows[user] = createUserRow(user, isOwn);
         userRowsDiv.appendChild(userRows[user]);
         users.push(user);
-
-        // Update layout
         redistributeRows();
     } else {
-        // Update existing row's theme
         const theme = userThemes[user] || { color: 'green', font: 'courier', bg: 'black' };
         const themeColor = normalizeColor(theme.color, NAMED_COLORS, '#00ff00');
         const themeBg = normalizeColor(theme.bg, NAMED_BGS, '#000000');
@@ -189,7 +175,6 @@ function updateUser(user, text = '', isOwn = false) {
         }
     }
 
-    // Update text if not own (own is updated by typing)
     if (!isOwn && text !== undefined) {
         const textarea = document.getElementById(`text-${user}`);
         if (textarea && textarea.value !== text) {
@@ -198,7 +183,6 @@ function updateUser(user, text = '', isOwn = false) {
     }
 }
 
-// Remove a user
 function removeUser(user) {
     if (userRows[user]) {
         userRowsDiv.removeChild(userRows[user]);
@@ -208,7 +192,6 @@ function removeUser(user) {
     }
 }
 
-// Redistribute row heights
 function redistributeRows() {
     const count = Object.keys(userRows).length;
     const height = count > 0 ? `${100 / count}%` : '100%';
@@ -218,7 +201,6 @@ function redistributeRows() {
     }
 }
 
-// Connect to WebSocket
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/chat`;
@@ -295,19 +277,16 @@ function connectWebSocket() {
     };
 }
 
-// Send message via WebSocket
 function sendMessage(data) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(data));
     }
 }
 
-// Update user count
 function updateUserCount(count) {
     userCountSpan.textContent = `${count} online`;
 }
 
-// Join chat
 function joinChat() {
     const name = usernameInput.value.trim();
 
@@ -318,7 +297,6 @@ function joinChat() {
 
     username = name;
 
-    // Store own theme preferences and username
     const prefs = getCurrentPrefs();
     userThemes[username] = prefs;
     savePrefs({ ...prefs, username: name });
@@ -326,12 +304,9 @@ function joinChat() {
     loginScreen.classList.remove('active');
     chatScreen.classList.add('active');
 
-    // Add own row first
     updateUser(username, '', true);
-
     connectWebSocket();
 
-    // Focus on own textarea
     const ownTextarea = document.getElementById(`text-${username}`);
     if (ownTextarea) {
         ownTextarea.focus();
@@ -355,16 +330,15 @@ function exitToLogin() {
     chatScreen.classList.remove('active');
     loginScreen.classList.add('active');
 
+    usernameInput.value = '';
     if (colorSelect) colorSelect.value = '#00ff00';
     if (fontSelect) fontSelect.value = 'courier';
     if (bgSelect) bgSelect.value = '#000000';
     updatePreview();
 
-    usernameInput.value = '';
     usernameInput.focus();
 }
 
-// Event listeners
 joinBtn.addEventListener('click', joinChat);
 
 usernameInput.addEventListener('keypress', (e) => {
@@ -375,7 +349,6 @@ usernameInput.addEventListener('keypress', (e) => {
 
 exitBtn?.addEventListener('click', exitToLogin);
 
-// Handle page unload
 window.addEventListener('beforeunload', () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
         sendMessage({ type: 'leave', user: username });
@@ -383,5 +356,4 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Focus username input on load
 usernameInput.focus();
