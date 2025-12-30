@@ -104,6 +104,12 @@ bgSelect?.addEventListener('change', updatePreview);
 bgSelect?.addEventListener('input', updatePreview);
 usernameInput?.addEventListener('input', updatePreview);
 
+// Auto-join if username exists in localStorage
+const savedPrefs = loadPrefs();
+if (savedPrefs && savedPrefs.username && savedPrefs.username.trim()) {
+    joinChat();
+}
+
 function createUserRow(user, isOwn = false) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'user-row';
