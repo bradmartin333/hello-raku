@@ -171,7 +171,7 @@ body {
     gap: 12px;
 }
 
-.exit-btn {
+.header-btn {
     background: transparent;
     color: #777;
     border: 1px solid #333;
@@ -182,12 +182,12 @@ body {
     padding: 0 10px;
 }
 
-.exit-btn:hover {
+.header-btn:hover {
     border-color: #666;
     color: #ccc;
 }
 
-.exit-btn:active {
+.header-btn:active {
     background: #111;
 }
 

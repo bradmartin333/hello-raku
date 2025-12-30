@@ -16,7 +16,8 @@ const fontSelect = document.getElementById('font-select');
 const bgSelect = document.getElementById('bg-select');
 const userRowsDiv = document.getElementById('user-rows');
 const userCountSpan = document.getElementById('user-count');
-const exitBtn = document.getElementById('exit-btn');
+const repoBtn = document.getElementById('repo-btn');
+const deleteUserBtn = document.getElementById('delete-user-btn');
 
 const NAMED_COLORS = {
     green: '#00ff00',
@@ -427,7 +428,11 @@ usernameInput.addEventListener('keypress', (e) => {
     }
 });
 
-exitBtn?.addEventListener('click', exitToLogin);
+repoBtn?.addEventListener('click', () => {
+    window.open('https://github.com/bradmartin333/hello-raku/tree/main/talkomatic', '_blank', 'noopener,noreferrer');
+});
+
+deleteUserBtn?.addEventListener('click', exitToLogin);
 
 window.addEventListener('beforeunload', () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
