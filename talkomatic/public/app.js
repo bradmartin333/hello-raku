@@ -3,6 +3,7 @@ let username = '';
 let userRows = {};
 let users = [];
 let userThemes = {};
+let sessionId = '';
 
 const STORAGE_KEY = 'talkomatic.prefs.v1';
 
@@ -43,13 +44,22 @@ function normalizeColor(value, table, fallback) {
     return table[trimmed] ?? fallback;
 }
 
+function generateSessionId() {
+    try {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+            return globalThis.crypto.randomUUID();
+        }
+    } catch { }
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 function loadPrefs() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
         const prefs = JSON.parse(raw);
         if (!prefs.sessionId) {
-            prefs.sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+            prefs.sessionId = generateSessionId();
             savePrefs(prefs);
         }
         return prefs;
@@ -61,7 +71,7 @@ function loadPrefs() {
 function savePrefs(prefs) {
     try {
         if (!prefs.sessionId) {
-            prefs.sessionId = sessionId || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2));
+            prefs.sessionId = sessionId || generateSessionId();
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch { }
@@ -104,7 +114,7 @@ function updatePreview() {
         }
     } else {
         // Initialize session ID if no prefs exist
-        sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+        sessionId = generateSessionId();
         savePrefs({ sessionId });
     }
 }
