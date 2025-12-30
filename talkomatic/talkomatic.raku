@@ -42,16 +42,6 @@ my $application = route {
                                 next;
                             }
                             
-                            # Reject duplicate usernames
-                            if %clients{$current-user}:exists {
-                                say "Rejected join attempt: username '$current-user' already taken";
-                                $client-supply.emit(to-json({
-                                    type => 'error',
-                                    message => 'username already taken'
-                                }));
-                                next;
-                            }
-                            
                             %clients{$current-user} = $client-supply;
                             %user-texts{$current-user} = '';
                             %user-themes{$current-user} = $data<theme> // %default-theme;
@@ -107,7 +97,7 @@ my $application = route {
                         }
                         
                         when 'leave' {
-                            handle-disconnect($data<user>);
+                            handle-disconnect($data<user>, $client-supply);
                         }
                     }
                 }
@@ -119,7 +109,7 @@ my $application = route {
                 
                 # Clean up when client disconnects
                 QUIT {
-                    handle-disconnect($current-user) if $current-user;
+                    handle-disconnect($current-user, $client-supply) if $current-user;
                 }
             }
         }
@@ -140,13 +130,19 @@ sub broadcast-to-others($sender, $data) {
     }
 }
 
-sub handle-disconnect($user) {
+sub handle-disconnect($user, $client-supply) {
     return unless $user;
     return unless %clients{$user}:exists;
     
+    # Only disconnect if the client supply matches the one in the registry
+    # This prevents a race condition where a new connection for the same user
+    # is removed by the old connection's cleanup.
+    return unless %clients{$user} === $client-supply;
+
     %clients{$user}:delete;
     %user-texts{$user}:delete;
     %user-themes{$user}:delete;
+    %user-sessions{$user}:delete;
     
     broadcast-to-all({
         type => 'leave',

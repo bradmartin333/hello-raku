@@ -47,7 +47,12 @@ function loadPrefs() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
-        return JSON.parse(raw);
+        const prefs = JSON.parse(raw);
+        if (!prefs.sessionId) {
+            prefs.sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+            savePrefs(prefs);
+        }
+        return prefs;
     } catch {
         return null;
     }
@@ -55,6 +60,9 @@ function loadPrefs() {
 
 function savePrefs(prefs) {
     try {
+        if (!prefs.sessionId) {
+            prefs.sessionId = sessionId || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2));
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch { }
 }
@@ -91,6 +99,13 @@ function updatePreview() {
         if (usernameInput && prefs.username) {
             usernameInput.value = prefs.username;
         }
+        if (prefs.sessionId) {
+            sessionId = prefs.sessionId;
+        }
+    } else {
+        // Initialize session ID if no prefs exist
+        sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+        savePrefs({ sessionId });
     }
 }
 
@@ -250,7 +265,8 @@ function connectWebSocket() {
         sendMessage({
             type: 'join',
             user: username,
-            theme: userThemes[username]
+            theme: userThemes[username],
+            sessionId: sessionId
         });
     };
 
@@ -346,7 +362,7 @@ function joinChat() {
 
     const prefs = getCurrentPrefs();
     userThemes[username] = prefs;
-    savePrefs({ ...prefs, username: name });
+    savePrefs({ ...prefs, username: name, sessionId: sessionId });
 
     loginScreen.classList.remove('active');
     chatScreen.classList.add('active');
