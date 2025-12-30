@@ -21,3 +21,4 @@ A real-time group chat web application inspired by the original Talkomatic from 
 - Message reactions
 - TLS termination
 - Markdown support in textareas
+- Tab notifications
