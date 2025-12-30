@@ -3,6 +3,7 @@ let username = '';
 let userRows = {};
 let users = [];
 let userThemes = {};
+let sessionId = '';
 
 const STORAGE_KEY = 'talkomatic.prefs.v1';
 
@@ -15,7 +16,8 @@ const fontSelect = document.getElementById('font-select');
 const bgSelect = document.getElementById('bg-select');
 const userRowsDiv = document.getElementById('user-rows');
 const userCountSpan = document.getElementById('user-count');
-const exitBtn = document.getElementById('exit-btn');
+const repoBtn = document.getElementById('repo-btn');
+const deleteUserBtn = document.getElementById('delete-user-btn');
 
 const NAMED_COLORS = {
     green: '#00ff00',
@@ -43,11 +45,25 @@ function normalizeColor(value, table, fallback) {
     return table[trimmed] ?? fallback;
 }
 
+function generateSessionId() {
+    try {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+            return globalThis.crypto.randomUUID();
+        }
+    } catch { }
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 function loadPrefs() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
-        return JSON.parse(raw);
+        const prefs = JSON.parse(raw);
+        if (!prefs.sessionId) {
+            prefs.sessionId = generateSessionId();
+            savePrefs(prefs);
+        }
+        return prefs;
     } catch {
         return null;
     }
@@ -55,6 +71,9 @@ function loadPrefs() {
 
 function savePrefs(prefs) {
     try {
+        if (!prefs.sessionId) {
+            prefs.sessionId = sessionId || generateSessionId();
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch { }
 }
@@ -91,6 +110,13 @@ function updatePreview() {
         if (usernameInput && prefs.username) {
             usernameInput.value = prefs.username;
         }
+        if (prefs.sessionId) {
+            sessionId = prefs.sessionId;
+        }
+    } else {
+        // Initialize session ID if no prefs exist
+        sessionId = generateSessionId();
+        savePrefs({ sessionId });
     }
 }
 
@@ -124,9 +150,32 @@ function createUserRow(user, isOwn = false) {
 
     const labelDiv = document.createElement('div');
     labelDiv.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
-    labelDiv.textContent = user;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = user;
+    labelDiv.appendChild(nameSpan);
+
     labelDiv.style.color = themeColor;
     labelDiv.style.backgroundColor = themeBg;
+    labelDiv.style.display = 'flex';
+    labelDiv.style.justifyContent = 'space-between';
+    labelDiv.style.alignItems = 'center';
+
+    if (!isOwn) {
+        const fireworksBtn = document.createElement('button');
+        fireworksBtn.className = 'fireworks-btn';
+        fireworksBtn.textContent = '🎆';
+        fireworksBtn.title = 'Send Fireworks';
+        fireworksBtn.onclick = (e) => {
+            e.stopPropagation();
+            sendMessage({
+                type: 'fireworks',
+                target: user,
+                from: username
+            });
+        };
+        labelDiv.appendChild(fireworksBtn);
+    }
 
     const textarea = document.createElement('textarea');
     textarea.className = `user-text font-${theme.font}`;
@@ -169,25 +218,36 @@ function updateUser(user, text = '', isOwn = false) {
         const themeBg = normalizeColor(theme.bg, NAMED_BGS, '#000000');
         const label = userRows[user].querySelector('.user-label');
         const textarea = userRows[user].querySelector('.user-text');
+        const isCurrentUser = isOwn || (user === username);
 
         if (label) {
-            label.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
+            label.className = `user-label ${isCurrentUser ? 'own' : ''} font-${theme.font}`;
             label.style.color = themeColor;
             label.style.backgroundColor = themeBg;
         }
         if (textarea) {
             textarea.className = `user-text font-${theme.font}`;
-            textarea.readOnly = !isOwn;
-            textarea.tabIndex = isOwn ? 0 : -1;
+            textarea.readOnly = !isCurrentUser;
+            textarea.tabIndex = isCurrentUser ? 0 : -1;
             textarea.style.color = themeColor;
             textarea.style.backgroundColor = themeBg;
         }
     }
 
-    if (!isOwn && text !== undefined) {
+    const isActuallyOwn = isOwn || (user === username);
+    if (!isActuallyOwn && text !== undefined) {
         const textarea = document.getElementById(`text-${user}`);
         if (textarea && textarea.value !== text) {
             textarea.value = text;
+        }
+    } else if (isActuallyOwn && text !== undefined) {
+        const textarea = document.getElementById(`text-${user}`);
+        if (textarea && textarea.value !== text) {
+            if (document.activeElement !== textarea) {
+                textarea.value = text;
+            } else {
+                textarea.value = text;
+            }
         }
     }
 }
@@ -227,7 +287,8 @@ function connectWebSocket() {
         sendMessage({
             type: 'join',
             user: username,
-            theme: userThemes[username]
+            theme: userThemes[username],
+            sessionId: sessionId
         });
     };
 
@@ -237,12 +298,10 @@ function connectWebSocket() {
 
             switch (data.type) {
                 case 'join':
-                    if (data.user !== username) {
-                        if (data.theme) {
-                            userThemes[data.user] = data.theme;
-                        }
-                        updateUser(data.user);
+                    if (data.theme) {
+                        userThemes[data.user] = data.theme;
                     }
+                    updateUser(data.user);
                     break;
 
                 case 'leave':
@@ -250,19 +309,17 @@ function connectWebSocket() {
                     break;
 
                 case 'update':
-                    if (data.user !== username) {
-                        if (data.theme) {
-                            userThemes[data.user] = data.theme;
-                        }
-                        updateUser(data.user, data.text);
+                    if (data.theme) {
+                        userThemes[data.user] = data.theme;
                     }
+                    updateUser(data.user, data.text);
                     break;
 
                 case 'users':
                     // Initial user list (array of { user, theme, text })
                     data.users.forEach((entry) => {
                         const user = typeof entry === 'string' ? entry : entry.user;
-                        if (!user || user === username) return;
+                        if (!user) return;
 
                         if (typeof entry === 'object' && entry.theme) {
                             userThemes[user] = entry.theme;
@@ -275,6 +332,10 @@ function connectWebSocket() {
 
                 case 'user-count':
                     updateUserCount(data.count);
+                    break;
+
+                case 'fireworks':
+                    showFireworks();
                     break;
 
                 case 'error':
@@ -319,7 +380,7 @@ function joinChat() {
 
     const prefs = getCurrentPrefs();
     userThemes[username] = prefs;
-    savePrefs({ ...prefs, username: name });
+    savePrefs({ ...prefs, username: name, sessionId: sessionId });
 
     loginScreen.classList.remove('active');
     chatScreen.classList.add('active');
@@ -367,7 +428,11 @@ usernameInput.addEventListener('keypress', (e) => {
     }
 });
 
-exitBtn?.addEventListener('click', exitToLogin);
+repoBtn?.addEventListener('click', () => {
+    window.open('https://github.com/bradmartin333/hello-raku/tree/main/talkomatic', '_blank', 'noopener,noreferrer');
+});
+
+deleteUserBtn?.addEventListener('click', exitToLogin);
 
 window.addEventListener('beforeunload', () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -375,5 +440,38 @@ window.addEventListener('beforeunload', () => {
         ws.close();
     }
 });
+
+function showFireworks() {
+    const container = document.createElement('div');
+    container.className = 'fireworks-container';
+    document.body.appendChild(container);
+
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'firework-particle';
+
+        const startX = window.innerWidth / 2;
+        const startY = window.innerHeight / 2;
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 5;
+        const tx = Math.cos(angle) * velocity * 100;
+        const ty = Math.sin(angle) * velocity * 100;
+
+        particle.style.left = startX + 'px';
+        particle.style.top = startY + 'px';
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
+
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+        container.appendChild(particle);
+    }
+
+    setTimeout(() => {
+        document.body.removeChild(container);
+    }, 2000);
+}
 
 usernameInput.focus();
