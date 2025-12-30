@@ -1,0 +1,319 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #999;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#login-screen {
+    justify-content: center;
+    align-items: center;
+    background: #000;
+}
+
+.login-box {
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    padding: 20px;
+}
+
+.login-box h1 {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 3em;
+    letter-spacing: 5px;
+}
+
+#username-input {
+    background: transparent;
+    color: #999;
+    border: none;
+    padding: 15px;
+    font-size: 1.2em;
+    width: 100%;
+}
+
+#username-input:focus {
+    outline: none;
+}
+
+.preview-area {
+    background: #000;
+    border: 1px solid #333;
+    padding: 0;
+    margin-bottom: 20px;
+    min-height: 80px;
+}
+
+.preview-label {
+    background: #111;
+    color: #666;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    border-bottom: 1px solid #333;
+}
+
+.preview-text {
+    padding: 15px;
+    font-size: 1.1em;
+    line-height: 1.5;
+}
+
+.selectors-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.theme-selector {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.theme-selector label {
+    color: #666;
+    font-size: 0.85em;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.theme-selector select {
+    background: #000;
+    color: #999;
+    border: 1px solid #333;
+    padding: 10px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    cursor: pointer;
+    width: 100%;
+}
+
+.theme-selector input[type="color"] {
+    background: #000;
+    border: 1px solid #333;
+    width: 100%;
+    height: 42px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.theme-selector input[type="color"]:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.theme-selector select:focus {
+    outline: none;
+    border-color: #666;
+    color: #ccc;
+}
+
+.theme-selector select option {
+    background: #000;
+    color: #999;
+}
+
+#join-btn {
+    background: #222;
+    color: #999;
+    border: 1px solid #333;
+    padding: 12px 40px;
+    font-family: 'Courier New', monospace;
+    font-size: 1.2em;
+    cursor: pointer;
+    letter-spacing: 2px;
+    width: 100%;
+}
+
+#join-btn:hover {
+    background: #333;
+    color: #ccc;
+    border-color: #666;
+}
+
+#join-btn:active {
+    background: #111;
+}
+
+.header-bar {
+    background: #111;
+    color: #666;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    border-bottom: 1px solid #333;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.exit-btn {
+    background: transparent;
+    color: #777;
+    border: 1px solid #333;
+    height: 28px;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
+    padding: 0 10px;
+}
+
+.exit-btn:hover {
+    border-color: #666;
+    color: #ccc;
+}
+
+.exit-btn:active {
+    background: #111;
+}
+
+#user-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-row {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #444;
+    border-top: none;
+    min-height: 0;
+}
+
+.user-row:first-child {
+    border-top: 2px solid #444;
+}
+
+.user-label {
+    padding: 7px 10px;
+    font-size: 1.15em;
+    border-bottom: 1px solid #222;
+}
+
+.user-label.own {
+    font-weight: bold;
+}
+
+.user-text {
+    flex: 1;
+    background: transparent;
+    color: inherit;
+    border: none;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 1em;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
+}
+
+.user-text:focus,
+.user-text:focus-visible {
+    outline: none;
+}
+
+.theme-green {
+    color: #0f0;
+}
+
+.theme-amber {
+    color: #ffb000;
+}
+
+.theme-cyan {
+    color: #00ffff;
+}
+
+.theme-white {
+    color: #ffffff;
+}
+
+.theme-magenta {
+    color: #ff00ff;
+}
+
+.theme-blue {
+    color: #5555ff;
+}
+
+.bg-black {
+    background: #000;
+}
+
+.bg-slate {
+    background: #0b0f14;
+}
+
+.bg-navy {
+    background: #001326;
+}
+
+.bg-maroon {
+    background: #240008;
+}
+
+.bg-paper {
+    background: #f2f2f2;
+}
+
+.font-courier {
+    font-family: 'Courier New', monospace;
+}
+
+.font-mono {
+    font-family: monospace;
+}
+
+.font-consolas {
+    font-family: 'Consolas', monospace;
+}
+
+.font-terminal {
+    font-family: 'Lucida Console', monospace;
+}
+
+.user-text:disabled {
+    cursor: default;
+}
+
+.user-text::-webkit-scrollbar {
+    width: 8px;
+}
+
+.user-text::-webkit-scrollbar-track {
+    background: #000;
+}
+
+.user-text::-webkit-scrollbar-thumb {
+    background: #0f0;
+}
+
+.user-text::-webkit-scrollbar-thumb:hover {
+    background: #0d0;
+}
