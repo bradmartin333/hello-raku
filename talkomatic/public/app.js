@@ -4,6 +4,8 @@ let userRows = {};
 let users = [];
 let userThemes = {};
 let sessionId = '';
+let reconnectEnabled = false;
+let reconnectTimer = null;
 
 const STORAGE_KEY = 'talkomatic.prefs.v1';
 
@@ -116,7 +118,6 @@ function updatePreview() {
     } else {
         // Initialize session ID if no prefs exist
         sessionId = generateSessionId();
-        savePrefs({ sessionId });
     }
 }
 
@@ -274,6 +275,11 @@ function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/chat`;
 
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -354,7 +360,9 @@ function connectWebSocket() {
 
     ws.onclose = () => {
         console.log('Disconnected from chat server');
-        setTimeout(connectWebSocket, 3000);
+        if (reconnectEnabled && username && username.trim()) {
+            reconnectTimer = setTimeout(connectWebSocket, 3000);
+        }
     };
 }
 
@@ -377,6 +385,7 @@ function joinChat() {
     }
 
     username = name;
+    reconnectEnabled = true;
 
     const prefs = getCurrentPrefs();
     userThemes[username] = prefs;
@@ -395,9 +404,15 @@ function joinChat() {
 }
 
 function exitToLogin() {
+    reconnectEnabled = false;
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+
     if (ws && ws.readyState === WebSocket.OPEN && username) {
-        sendMessage({ type: 'leave', user: username });
-        ws.close();
+        try { sendMessage({ type: 'leave', user: username }); } catch { }
+        try { ws.close(); } catch { }
     }
 
     username = '';
@@ -411,11 +426,19 @@ function exitToLogin() {
     chatScreen.classList.remove('active');
     loginScreen.classList.add('active');
 
+    try { localStorage.removeItem(STORAGE_KEY); } catch { }
+    sessionId = generateSessionId();
+
     usernameInput.value = '';
     if (colorSelect) colorSelect.value = '#00ff00';
     if (fontSelect) fontSelect.value = 'courier';
     if (bgSelect) bgSelect.value = '#000000';
-    updatePreview();
+
+    if (usernameInput) {
+        usernameInput.className = 'font-courier';
+        usernameInput.style.color = '#00ff00';
+        usernameInput.style.backgroundColor = '#000000';
+    }
 
     usernameInput.focus();
 }
@@ -435,6 +458,7 @@ repoBtn?.addEventListener('click', () => {
 deleteUserBtn?.addEventListener('click', exitToLogin);
 
 window.addEventListener('beforeunload', () => {
+    reconnectEnabled = false;
     if (ws && ws.readyState === WebSocket.OPEN) {
         sendMessage({ type: 'leave', user: username });
         ws.close();
