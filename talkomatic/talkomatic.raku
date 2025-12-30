@@ -35,6 +35,23 @@ my $application = route {
                     given $data<type> {
                         when 'join' {
                             $current-user = $data<user>;
+                            
+                            # Reject empty usernames
+                            unless $current-user && $current-user.trim {
+                                say "Rejected join attempt with empty username";
+                                next;
+                            }
+                            
+                            # Reject duplicate usernames
+                            if %clients{$current-user}:exists {
+                                say "Rejected join attempt: username '$current-user' already taken";
+                                $client-supply.emit(to-json({
+                                    type => 'error',
+                                    message => 'username already taken'
+                                }));
+                                next;
+                            }
+                            
                             %clients{$current-user} = $client-supply;
                             %user-texts{$current-user} = '';
                             %user-themes{$current-user} = $data<theme> // %default-theme;

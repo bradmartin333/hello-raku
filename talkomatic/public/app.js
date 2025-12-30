@@ -104,10 +104,13 @@ bgSelect?.addEventListener('change', updatePreview);
 bgSelect?.addEventListener('input', updatePreview);
 usernameInput?.addEventListener('input', updatePreview);
 
-// Auto-join if username exists in localStorage
+// Auto-join if username exists in localStorage and is non-empty
 const savedPrefs = loadPrefs();
 if (savedPrefs && savedPrefs.username && savedPrefs.username.trim()) {
-    joinChat();
+    // Additional check to ensure username is not empty
+    if (savedPrefs.username.trim().length > 0) {
+        joinChat();
+    }
 }
 
 function createUserRow(user, isOwn = false) {
@@ -215,6 +218,12 @@ function connectWebSocket() {
 
     ws.onopen = () => {
         console.log('Connected to chat server');
+        // Double-check username is not empty before sending join
+        if (!username || !username.trim()) {
+            console.error('Cannot join with empty username');
+            ws.close();
+            return;
+        }
         sendMessage({
             type: 'join',
             user: username,
@@ -266,6 +275,11 @@ function connectWebSocket() {
 
                 case 'user-count':
                     updateUserCount(data.count);
+                    break;
+
+                case 'error':
+                    alert(data.message || 'An error occurred');
+                    exitToLogin();
                     break;
             }
         } catch (e) {
