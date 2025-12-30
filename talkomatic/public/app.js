@@ -139,7 +139,7 @@ function createUserRow(user, isOwn = false) {
 
     const labelDiv = document.createElement('div');
     labelDiv.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
-    
+
     const nameSpan = document.createElement('span');
     nameSpan.textContent = user;
     labelDiv.appendChild(nameSpan);
@@ -207,25 +207,36 @@ function updateUser(user, text = '', isOwn = false) {
         const themeBg = normalizeColor(theme.bg, NAMED_BGS, '#000000');
         const label = userRows[user].querySelector('.user-label');
         const textarea = userRows[user].querySelector('.user-text');
+        const isCurrentUser = isOwn || (user === username);
 
         if (label) {
-            label.className = `user-label ${isOwn ? 'own' : ''} font-${theme.font}`;
+            label.className = `user-label ${isCurrentUser ? 'own' : ''} font-${theme.font}`;
             label.style.color = themeColor;
             label.style.backgroundColor = themeBg;
         }
         if (textarea) {
             textarea.className = `user-text font-${theme.font}`;
-            textarea.readOnly = !isOwn;
-            textarea.tabIndex = isOwn ? 0 : -1;
+            textarea.readOnly = !isCurrentUser;
+            textarea.tabIndex = isCurrentUser ? 0 : -1;
             textarea.style.color = themeColor;
             textarea.style.backgroundColor = themeBg;
         }
     }
 
-    if (!isOwn && text !== undefined) {
+    const isActuallyOwn = isOwn || (user === username);
+    if (!isActuallyOwn && text !== undefined) {
         const textarea = document.getElementById(`text-${user}`);
         if (textarea && textarea.value !== text) {
             textarea.value = text;
+        }
+    } else if (isActuallyOwn && text !== undefined) {
+        const textarea = document.getElementById(`text-${user}`);
+        if (textarea && textarea.value !== text) {
+            if (document.activeElement !== textarea) {
+                textarea.value = text;
+            } else {
+                textarea.value = text;
+            }
         }
     }
 }
@@ -276,12 +287,10 @@ function connectWebSocket() {
 
             switch (data.type) {
                 case 'join':
-                    if (data.user !== username) {
-                        if (data.theme) {
-                            userThemes[data.user] = data.theme;
-                        }
-                        updateUser(data.user);
+                    if (data.theme) {
+                        userThemes[data.user] = data.theme;
                     }
+                    updateUser(data.user);
                     break;
 
                 case 'leave':
@@ -289,19 +298,17 @@ function connectWebSocket() {
                     break;
 
                 case 'update':
-                    if (data.user !== username) {
-                        if (data.theme) {
-                            userThemes[data.user] = data.theme;
-                        }
-                        updateUser(data.user, data.text);
+                    if (data.theme) {
+                        userThemes[data.user] = data.theme;
                     }
+                    updateUser(data.user, data.text);
                     break;
 
                 case 'users':
                     // Initial user list (array of { user, theme, text })
                     data.users.forEach((entry) => {
                         const user = typeof entry === 'string' ? entry : entry.user;
-                        if (!user || user === username) return;
+                        if (!user) return;
 
                         if (typeof entry === 'object' && entry.theme) {
                             userThemes[user] = entry.theme;
@@ -427,23 +434,23 @@ function showFireworks() {
     for (let i = 0; i < 50; i++) {
         const particle = document.createElement('div');
         particle.className = 'firework-particle';
-        
+
         const startX = window.innerWidth / 2;
         const startY = window.innerHeight / 2;
-        
+
         const angle = Math.random() * Math.PI * 2;
         const velocity = 2 + Math.random() * 5;
         const tx = Math.cos(angle) * velocity * 100;
         const ty = Math.sin(angle) * velocity * 100;
-        
+
         particle.style.left = startX + 'px';
         particle.style.top = startY + 'px';
         particle.style.setProperty('--tx', tx + 'px');
         particle.style.setProperty('--ty', ty + 'px');
-        
+
         const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
         particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        
+
         container.appendChild(particle);
     }
 

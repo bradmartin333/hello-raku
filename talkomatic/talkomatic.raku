@@ -4,7 +4,7 @@ use Cro::HTTP::Server;
 use Cro::WebSocket::Message;
 use JSON::Fast;
 
-my %clients; # username => client-supply
+my %clients; # username => Array[Supplier]
 my %user-texts; # username => current text
 my %user-themes; # username => { color => Str, font => Str, bg => Str }
 my %user-status; # username => status ('active', 'away')
@@ -48,9 +48,9 @@ my $application = route {
 
                             # Check for existing user
                             if %clients{$current-user}:exists {
-                                # If session ID matches, allow takeover (reconnection)
+                                # If session ID matches, allow additional connection
                                 if %user-sessions{$current-user} eq $session-id {
-                                    say "User '$current-user' reconnected (session match)";
+                                    say "User '$current-user' added connection (session match)";
                                 } else {
                                     say "Rejected join attempt: username '$current-user' already taken (session mismatch)";
                                     $client-supply.emit(to-json({
@@ -61,11 +61,16 @@ my $application = route {
                                 }
                             }
                             
-                            %clients{$current-user} = $client-supply;
-                            %user-texts{$current-user} = '';
-                            %user-themes{$current-user} = $data<theme> // %default-theme;
-                            %user-status{$current-user} = 'active';
-                            %user-sessions{$current-user} = $session-id;
+                            %clients{$current-user} //= Array.new;
+                            %clients{$current-user}.push($client-supply);
+                            
+                            # Only initialize these if it's the first connection
+                            unless %user-texts{$current-user}:exists {
+                                %user-texts{$current-user} = '';
+                                %user-themes{$current-user} = $data<theme> // %default-theme;
+                                %user-status{$current-user} = 'active';
+                                %user-sessions{$current-user} = $session-id;
+                            }
                             
                             # Send current users list to new user
                             $client-supply.emit(to-json({
@@ -86,14 +91,14 @@ my $application = route {
                                 count => %clients.elems
                             });
                             
-                            # Notify others of new user
-                            broadcast-to-others($current-user, {
+                            # Notify others of new user (and other connections of same user)
+                            broadcast-to-others($current-user, $client-supply, {
                                 type => 'join',
                                 user => $current-user,
                                 theme => (%user-themes{$current-user} // %default-theme)
                             });
                             
-                            say "User joined: $current-user (total: {%clients.elems})";
+                            say "User joined: $current-user (total users: {%clients.elems})";
                         }
                         
                         when 'update' {
@@ -101,7 +106,7 @@ my $application = route {
                             %user-texts{$data<user>} = $data<text>;
                             %user-themes{$data<user>} = $data<theme> if $data<theme>;
                             
-                            broadcast-to-others($data<user>, {
+                            broadcast-to-others($data<user>, $client-supply, {
                                 type => 'update',
                                 user => $data<user>,
                                 text => $data<text>,
@@ -111,7 +116,7 @@ my $application = route {
 
                         when 'status' {
                             %user-status{$data<user>} = $data<status>;
-                            broadcast-to-others($data<user>, {
+                            broadcast-to-others($data<user>, $client-supply, {
                                 type => 'status',
                                 user => $data<user>,
                                 status => $data<status>
@@ -120,10 +125,12 @@ my $application = route {
 
                         when 'fireworks' {
                             if %clients{$data<target>}:exists {
-                                %clients{$data<target>}.emit(to-json({
-                                    type => 'fireworks',
-                                    from => $data<from>
-                                }));
+                                for %clients{$data<target>}.list -> $s {
+                                    $s.emit(to-json({
+                                        type => 'fireworks',
+                                        from => $data<from>
+                                    }));
+                                }
                             }
                         }
                         
@@ -149,15 +156,21 @@ my $application = route {
 
 sub broadcast-to-all($data) {
     my $json = to-json($data);
-    for %clients.values -> $client {
-        $client.emit($json);
+    for %clients.values -> $supplies {
+        for $supplies.list -> $s {
+            $s.emit($json);
+        }
     }
 }
 
-sub broadcast-to-others($sender, $data) {
+sub broadcast-to-others($sender, $sender-supply, $data) {
     my $json = to-json($data);
-    for %clients.kv -> $user, $client {
-        $client.emit($json) if $user ne $sender;
+    for %clients.kv -> $user, $supplies {
+        for $supplies.list -> $s {
+            if $user ne $sender || $s !=== $sender-supply {
+                $s.emit($json);
+            }
+        }
     }
 }
 
@@ -165,28 +178,34 @@ sub handle-disconnect($user, $client-supply) {
     return unless $user;
     return unless %clients{$user}:exists;
     
-    # Only disconnect if the client supply matches the one in the registry
-    # This prevents a race condition where a new connection for the same user
-    # is removed by the old connection's cleanup.
-    return unless %clients{$user} === $client-supply;
+    my $supplies = %clients{$user};
+    my $idx = $supplies.first($client-supply, :k);
+    
+    if $idx.defined {
+        $supplies.splice($idx, 1);
+    }
 
-    %clients{$user}:delete;
-    %user-texts{$user}:delete;
-    %user-themes{$user}:delete;
-    %user-status{$user}:delete;
-    %user-sessions{$user}:delete;
-    
-    broadcast-to-all({
-        type => 'leave',
-        user => $user
-    });
-    
-    broadcast-to-all({
-        type => 'user-count',
-        count => %clients.elems
-    });
-    
-    say "User left: $user (total: {%clients.elems})";
+    if $supplies.elems == 0 {
+        %clients{$user}:delete;
+        %user-texts{$user}:delete;
+        %user-themes{$user}:delete;
+        %user-status{$user}:delete;
+        %user-sessions{$user}:delete;
+        
+        broadcast-to-all({
+            type => 'leave',
+            user => $user
+        });
+        
+        broadcast-to-all({
+            type => 'user-count',
+            count => %clients.elems
+        });
+        
+        say "User left: $user (total users: {%clients.elems})";
+    } else {
+        say "User connection closed: $user (remaining connections: {$supplies.elems})";
+    }
 }
 
 my Cro::Service $service = Cro::HTTP::Server.new(
