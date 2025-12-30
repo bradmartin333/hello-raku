@@ -22,3 +22,7 @@ A real-time group chat web application inspired by the original Talkomatic from 
 - TLS termination
 - Markdown support in textareas
 - Tab notifications
+- Chat room achievements/badges
+    - Number of messages sent
+    - Time spent in chat
+    - Number of unique users interacted with
