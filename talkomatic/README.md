@@ -19,3 +19,5 @@ A real-time group chat web application inspired by the original Talkomatic from 
 - Away messages
 - Sound effects
 - Message reactions
+- TLS termination
+- Markdown support in textareas
