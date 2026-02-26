@@ -169,6 +169,7 @@ function createUserRow(user, isOwn = false) {
         fireworksBtn.title = 'Send Fireworks';
         fireworksBtn.onclick = (e) => {
             e.stopPropagation();
+            requestNotificationPermission();
             sendMessage({
                 type: 'fireworks',
                 target: user,
@@ -342,6 +343,7 @@ function connectWebSocket() {
 
                 case 'fireworks':
                     showFireworks();
+                    showFireworksNotification(data.from);
                     break;
 
                 case 'error':
@@ -376,6 +378,30 @@ function updateUserCount(count) {
     userCountSpan.textContent = `${count} online`;
 }
 
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission != 'denied') {
+        Notification.requestPermission();
+    }
+}
+
+function showFireworksNotification(from) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const notification = new Notification('🎆 Fireworks!', {
+        body: `${from || 'Someone'} sent you fireworks!`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎆</text></svg>',
+        tag: 'fireworks',
+    });
+
+    notification.onclick = () => {
+        window.focus();
+        notification.close();
+    };
+
+    setTimeout(() => notification.close(), 5000);
+}
+
 function joinChat() {
     const name = usernameInput.value.trim();
 
@@ -386,6 +412,7 @@ function joinChat() {
 
     username = name;
     reconnectEnabled = true;
+    requestNotificationPermission();
 
     const prefs = getCurrentPrefs();
     userThemes[username] = prefs;
