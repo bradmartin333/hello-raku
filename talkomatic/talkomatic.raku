@@ -3,6 +3,7 @@ use Cro::HTTP::Router::WebSocket;
 use Cro::HTTP::Server;
 use Cro::WebSocket::Message;
 use JSON::Fast;
+use Cro::TLS;
 
 my %clients; # username => Array[Supplier]
 my %user-texts; # username => current text
@@ -208,13 +209,35 @@ sub handle-disconnect($user, $client-supply) {
     }
 }
 
-my Cro::Service $service = Cro::HTTP::Server.new(
-    :host<0.0.0.0>, :port<3000>, :$application
-);
+my $cert-file = %*ENV<TLS_CERT> // 'cert.pem';
+my $key-file  = %*ENV<TLS_KEY>  // 'key.pem';
+my $port      = (%*ENV<PORT> // '3000').Int;
+
+my $use-tls = $cert-file.IO.e && $key-file.IO.e;
+
+my Cro::Service $service;
+if $use-tls {
+    $service = Cro::HTTP::Server.new(
+        :host<0.0.0.0>, :$port, :$application,
+        tls => %(
+            private-key-file => $key-file,
+            certificate-file => $cert-file,
+        )
+    );
+} else {
+    $service = Cro::HTTP::Server.new(
+        :host<0.0.0.0>, :$port, :$application
+    );
+}
 
 $service.start;
 
-say "💬 talkomatic server running at http://0.0.0.0:3000";
+if $use-tls {
+    say "💬 talkomatic server running at https://0.0.0.0:$port";
+} else {
+    say "⚠️  no TLS cert found — running HTTP at http://0.0.0.0:$port";
+    say "   generate a cert with: openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj '/CN=localhost'";
+}
 say "press Ctrl+C to stop";
 
 react whenever signal(SIGINT) {
